@@ -1,0 +1,28 @@
+{
+  "name": "ng-admin-sample-app",
+  "private": true,
+  "version": "0.0.1",
+  "description": "A sample project using ng-admin, based on angular-seed-npm",
+  "repository": "-",
+  "license": "-",
+  "devDependencies": {
+    "http-server": "^0.9.0",
+    "jasmine-core": "^2.4.1"
+  },
+  "scripts": {
+    "update-deps": "npm update",
+    "prestart": "npm install",
+    "start": "http-server -a localhost -p 9000 -c-1 ./app",
+    "pretest": "npm install",
+    "preupdate-webdriver": "npm install",
+    "update-webdriver": "webdriver-manager update"
+  },
+  "dependencies": {
+    "angular": "^1.6.3",
+    "angular-loader": "^1.6.3",
+    "angular-mocks": "^1.6.3",
+    "angular-route": "^1.6.3",
+    "html5-boilerplate-npm": "^4.1.0-B",
+    "ng-admin": "^1.0.1"
+  }
+}
