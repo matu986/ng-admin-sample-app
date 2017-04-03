@@ -1,8 +1,9 @@
+/*jshint globalstrict: true*/
 'use strict';
 
 // declare a new module called 'myApp', and make it require the `ng-admin` module as a dependency
 var myApp = angular.module('myApp', [
-	'ng-admin'
+    'ng-admin'
 ]);
 
 myApp.config(['RestangularProvider', function(RestangularProvider) {
@@ -10,7 +11,7 @@ myApp.config(['RestangularProvider', function(RestangularProvider) {
     RestangularProvider.setDefaultHeaders({'Access-Control-Allow-Origin': '* '});
     // REST API params
     RestangularProvider.addFullRequestInterceptor(function(element, operation, what, url, headers, params) {
-        if (operation == "getList") {
+        if (operation === "getList") {
             // custom pagination params
             if (params._page) {
                 params._start = (params._page - 1) * params._perPage;
@@ -28,7 +29,9 @@ myApp.config(['RestangularProvider', function(RestangularProvider) {
             // custom filters
             if (params._filters) {
                 for (var filter in params._filters) {
-                    params[filter] = params._filters[filter];
+                	if(params._filters[filter]) {
+                        params[filter] = params._filters[filter];
+                    }
                 }
                 delete params._filters;
             }
@@ -39,108 +42,160 @@ myApp.config(['RestangularProvider', function(RestangularProvider) {
 
 // declare a function to run when the module bootstraps (during the 'config' phase)
 myApp.config(['NgAdminConfigurationProvider', function (nga) {
-     // create an admin application
+    // create an admin application
     var admin = nga.application('ng-admin Sample App')
-    /*  .baseApiUrl('http://kidscorp-admin.localhost/kidscorp-admin-api/public/api/'); // main API endpoint*/
-     .baseApiUrl('http://jsonplaceholder.typicode.com/'); // main API endpoint
-    
+	/*  .baseApiUrl('http://kidscorp-admin.localhost/kidscorp-admin-api/public/api/'); // main API endpoint*/
+        .baseApiUrl('http://jsonplaceholder.typicode.com/'); // main API endpoint
+
     // create entities
     // the API endpoint for this entities will be 'http://jsonplaceholder.typicode.com/entity/:id
     var user = nga.entity('users');
     var comment = nga.entity('comments');
     var post = nga.entity('posts');
+    var album = nga.entity('albums');
+
+
 
     user.listView()
-    	.fields([
-	    	nga.field('id').isDetailLink(true),,
-	        nga.field('name'),
-	        nga.field('username'),
-	        nga.field('email')
-	    ])
-	    .listActions(['show', 'edit', 'delete']); //action icons
+        .fields([
+            nga.field('id').isDetailLink(true),
+            nga.field('name'),
+            nga.field('username'),
+            nga.field('email')
+        ])
+        .listActions(['show', 'edit', 'delete']); //action icons
     user.creationView().fields([
-	    nga.field('name').validation({ required: true, minlength: 3, maxlength: 100 }),
-	    nga.field('username') .attributes({ placeholder: 'No space allowed, 5 chars min' })
-        	.validation({ required: true, pattern: '[A-Za-z0-9\.\-_]{5,20}' }),
-	    nga.field('email', 'email'),
-	    nga.field('address.street').label('Street'),
-	    nga.field('address.city').label('City'),
-	    nga.field('address.zipcode').label('Zipcode'),
-	    nga.field('phone'),
-	    nga.field('website')
-	]);
-	user.editionView().fields(user.creationView().fields());
+        nga.field('name').validation({ required: true, minlength: 3, maxlength: 100 }),
+        nga.field('username') .attributes({ placeholder: 'No space allowed, 5 chars min' })
+            .validation({ required: true, pattern: '[A-Za-z0-9\.\-_]{5,20}' }),
+        nga.field('email', 'email'),
+        nga.field('address.street').label('Street'),
+        nga.field('address.city').label('City'),
+        nga.field('address.zipcode').label('Zipcode'),
+        nga.field('phone'),
+        nga.field('website')
+    ]);
+
+    user.showView().fields([
+        nga.field('id'),
+        nga.field('name'),
+        nga.field('username'),
+        nga.field('email'),
+        nga.field('albums', 'referenced_list') // display list of related albums
+            .targetEntity(nga.entity('albums'))
+            .targetReferenceField('userId')
+            .targetFields([
+                nga.field('id'),
+                nga.field('title').label('Title')
+            ])
+            .listActions(['edit'])
+
+    ]);
+
+    user.editionView().fields(user.creationView().fields());
 
     comment.listView().fields([
-        nga.field('id').isDetailLink(true),,
+        nga.field('id').isDetailLink(true),
         nga.field('name'),
         nga.field('email'),
         nga.field('body'),
         nga.field('postId', 'reference')
-	        .targetEntity(post)
-	        .targetField(nga.field('id'))
-	        .label('Post')
+            .targetEntity(post)
+            .targetField(nga.field('id'))
+            .label('Post')
     ]);
-	
+
     post.listView()
-    	.fields([
-	        nga.field('id').isDetailLink(true),
-	        nga.field('title'),
-		    nga.field('body', 'text')
-		        .map(function truncate(value) {
-		            if (!value) return '';
-		            return value.length > 50 ? value.substr(0, 50) + '...' : value;
-		    	}),
-	        nga.field('userId', 'reference')
-		        .targetEntity(user)
-		        .targetField(nga.field('username'))
-		        .label('User')
-	    ])
-    	.listActions(['show']) //action icon
-		.batchActions([]) //remove multiple select
-    	.filters([
-	        nga.field('q')
-	            .label('')
-	            .pinned(true)
-	            .template('<div class="input-group"><input type="text" ng-model="value" placeholder="Search" class="form-control"></input><span class="input-group-addon"><i class="glyphicon glyphicon-search"></i></span></div>'),
-	        nga.field('userId', 'reference')
-	            .targetEntity(user)
-	            .targetField(nga.field('username'))
-	            .label('User')
-	    ]);
+        .fields([
+            nga.field('id').isDetailLink(true),
+            nga.field('title'),
+            nga.field('body', 'text')
+                .map(function truncate(value) {
+                    if (!value){ return '';}
+                    return value.length > 50 ? value.substr(0, 50) + '...' : value;
+                }),
+            nga.field('userId', 'reference')
+                .targetEntity(user)
+                .targetField(nga.field('username'))
+                .label('User')
+        ])
+        .listActions(['show']) //action icon
+        .batchActions([]) //remove multiple select
+        .filters([
+            nga.field('q')
+                .label('')
+                .pinned(true)
+                .template('<div class="input-group"><input type="text" ng-model="value" placeholder="Search" class="form-control"/><span class="input-group-addon"><i class="glyphicon glyphicon-search"></i></span></div>'),
+            nga.field('userId', 'reference')
+                .targetEntity(user)
+                .targetField(nga.field('username'))
+                .label('User')
+        ]);
     post.showView()
-    	.fields([
-		    nga.field('title'),
-		    nga.field('body', 'text'),
-		    nga.field('userId', 'reference')
-		        .targetEntity(user)
-		        .targetField(nga.field('username'))
-		        .label('User'),
-		    nga.field('comments', 'referenced_list')
-		        .targetEntity(nga.entity('comments'))
-		        .targetReferenceField('postId')
-		        .targetFields([
-		            nga.field('email'),
-		            nga.field('name')
-		        ])
-		        .sortField('id')
-		        .sortDir('DESC'),
-		]);
-	post.readOnly(); //read only entity (remove delete. create or edit options)
-    
+        .fields([
+            nga.field('title'),
+            nga.field('body', 'text'),
+            nga.field('userId', 'reference')
+                .targetEntity(user)
+                .targetField(nga.field('username'))
+                .label('User'),
+            nga.field('comments', 'referenced_list')
+                .targetEntity(nga.entity('comments'))
+                .targetReferenceField('postId')
+                .targetFields([
+                    nga.field('email'),
+                    nga.field('name')
+                ])
+                .sortField('id')
+                .sortDir('DESC')
+        ]);
+    post.readOnly(); //read only entity (remove delete. create or edit options)
+
+    album.listView()
+        .fields([
+            nga.field('id').isDetailLink(true),
+            // nga.field('userId').isDetailLink(true),
+            // nga.field('userId', 'reference')
+            //     .isDetailLink(false)
+            //     .label('User')
+            //     .targetEntity(user)
+            //     .targetField(nga.field('title').map(truncate)),
+            // .singleApiCall(ids => ({'id': ids })),
+            nga.field('userId', 'reference')
+                .isDetailLink(false)
+                .label('User')
+                .targetEntity(user)
+                .targetField(nga.field('name')),
+            nga.field('title')
+        ])
+        .listActions(['show', 'edit', 'delete']);
+
+    album.creationView().fields([
+        nga.field('userId', 'reference')
+            .label('User')
+            .targetEntity(user)
+            .targetField(nga.field('name'))
+            .validation({ required: true }),
+        nga.field('title').attributes({ placeholder: '5 chars min' })
+            .validation({ required: true})
+    ]);
+    album.editionView().fields(album.creationView().fields());
+
     // add entities
     admin.addEntity(user);
     admin.addEntity(comment);
     admin.addEntity(post);
+    admin.addEntity(album);
 
 //Customizing the Sidebar Menu
     admin.menu(nga.menu()
-	    .addChild(nga.menu(user).icon('<span class="glyphicon glyphicon-user"></span>'))
-	    .addChild(nga.menu().title('Items')
-	    	.addChild(nga.menu(post).icon('<span class="glyphicon glyphicon-pencil"></span>'))
-	    	.addChild(nga.menu(comment).icon('<span class="glyphicon glyphicon-triangle-right"></span>'))
-	   	)
-	);
+        .addChild(nga.menu(user).icon('<span class="glyphicon glyphicon-user"></span>'))
+        .addChild(nga.menu().title('Items')
+            .addChild(nga.menu(post).icon('<span class="glyphicon glyphicon-pencil"></span>'))
+            .addChild(nga.menu(comment).icon('<span class="glyphicon glyphicon-triangle-right"></span>'))
+            .addChild(nga.menu(album).icon('<span class="glyphicon glyphicon-triangle-right"></span>'))
+        )
+    );
 
     // attach the admin application to the DOM and execute it
     nga.configure(admin);
